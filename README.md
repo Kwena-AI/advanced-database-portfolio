@@ -31,6 +31,7 @@ The major things the system should be able to do include searching for books, re
 | **LOAN** | Records borrowing and returning transactions | Connects MEMBER, BOOK and STAFF |
 
 ## 3. ER Diagram
+
 ```mermaid
 erDiagram
     MEMBER ||--o{ LOAN : borrows
@@ -40,6 +41,7 @@ erDiagram
     AUTHOR ||--o{ BOOK_AUTHOR : has
     CATEGORY ||--o{ BOOK : classifies
     PUBLISHER ||--o{ BOOK : publishes
+```
 
 ## 4. Keys and Constraints
 
