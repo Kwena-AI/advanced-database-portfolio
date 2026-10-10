@@ -150,3 +150,22 @@ The screenshots include:
 * The Schemas panel showing the 8 tables
 * SQL query results
 * Evidence that the database was successfully created and tested
+
+## Portfolio 2: Query Processing and Optimisation
+
+### Queries
+Five queries were written against library_db demonstrating JOINs (Q1),
+GROUP BY aggregation (Q2, Q5), date functions for overdue detection (Q3),
+and a subquery (Q4). Results in screenshots q1–q4.
+
+### Optimisation
+EXPLAIN was run before and after adding indexes:
+- Before: type=ALL, key=NULL, rows=3 (full table scan)
+- After CREATE INDEX idx_member_email: type=ref, key=idx_member_email, rows=1
+- Same improvement on Loan.MemberID via idx_loan_member.
+
+### Analysis
+Indexes trade small storage/write cost for faster lookups by letting MySQL
+examine fewer rows. With small tables the millisecond saving is invisible,
+so performance is compared using execution plans (rows examined), which is
+the standard approach.
