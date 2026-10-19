@@ -7,6 +7,8 @@
 
 **Case Study:** Miva Community Library — Library Management System
 
+# Portfolio 1: Database Design and Modelling
+
 ## 1. Case Study Description
 The Miva Community Library is a public library system designed to keep track of books and the members who borrow them.
 
@@ -151,7 +153,7 @@ The screenshots include:
 * SQL query results
 * Evidence that the database was successfully created and tested
 
-## Portfolio 2: Query Processing and Optimisation
+# Portfolio 2: Query Processing and Optimisation
 
 ### Queries
 Five queries were written against library_db demonstrating JOINs (Q1),
@@ -169,3 +171,91 @@ Indexes trade small storage/write cost for faster lookups by letting MySQL
 examine fewer rows. With small tables the millisecond saving is invisible,
 so performance is compared using execution plans (rows examined), which is
 the standard approach.
+
+
+# Portfolio 3: Transactions and Concurrency
+
+## 1. Commit and Rollback
+
+### Demo 1: COMMIT
+
+For the first demo, I borrowed a book by inserting a loan record and reducing the available copies within a transaction, then executed `COMMIT`.
+
+Both changes were saved successfully. The loan appeared in the database, and the available copies of *Foundation* decreased from 2 to 1.
+
+### Demo 2: ROLLBACK
+
+For the second demo, I repeated the borrowing process but executed `ROLLBACK` instead.
+
+Although the `INSERT` and `UPDATE` statements each reported `1 row affected`, the verification queries confirmed that the loan count remained at 5 and the book's available copies remained at 3.
+
+This demonstrated that `ROLLBACK` reverses uncommitted changes, restoring the database to its previous state.
+
+### Demo 3: Handling Errors
+
+For the third demo, I started a transaction and reduced a book's available copies. I then attempted to insert a member with a duplicate email address, which failed because of the `UNIQUE` constraint.
+
+I observed that MySQL did not automatically undo the earlier book update. The transaction remained open, so I had to execute `ROLLBACK` manually.
+
+After the rollback, the book's available copies returned to their original value.
+
+**Key takeaway:** A failed SQL statement does not necessarily roll back an entire transaction. Explicit transaction handling is important when an operation fails.
+
+---
+
+## 2. Isolation
+
+I opened two query tabs in MySQL Workbench to simulate two concurrent users.
+
+1. In **Tab A**, I started a transaction and updated the phone number of Member 1 without committing the change.
+2. In **Tab B**, I set the transaction isolation level to `READ COMMITTED` and queried the same phone number.
+3. Tab B returned the old phone number because Tab A's change was still uncommitted.
+4. I returned to Tab A and executed `COMMIT`.
+5. When I queried the phone number again in Tab B, the new value appeared.
+
+This demonstrated that under `READ COMMITTED`, a transaction cannot read another transaction's uncommitted changes.
+
+However, successive reads of the same row can return different values if another transaction commits an update between those reads. This is known as a **non-repeatable read**.
+
+I also learned that MySQL's default InnoDB isolation level is `REPEATABLE READ`. Under this isolation level, consistent reads within the same transaction normally continue to see the same committed snapshot.
+
+---
+
+## 3. Concurrency Control
+
+For this demonstration, I used two sessions to simulate concurrent access to the same book, identified by `BookID = 2`.
+
+1. In **Tab A**, I executed `SELECT ... FOR UPDATE` to lock the target row.
+2. I updated the available copies but did not commit the transaction.
+3. In **Tab B**, I attempted another `SELECT ... FOR UPDATE` on the same row.
+4. The second query waited because Tab A held a conflicting row lock.
+5. Once I committed the transaction in Tab A, Tab B's query completed and returned the updated value.
+
+This demonstrated how InnoDB's row-level locking helps coordinate concurrent operations on shared data.
+
+For a library system, this is important because two librarians should not independently process conflicting updates based on the same available-copy count.
+
+**Key takeaway:** Row locks help prevent conflicting transactions from modifying the same data simultaneously. However, the application must still implement appropriate checks and updates to prevent lending more copies than are available.
+
+---
+
+## 4. Key Learning
+
+This portfolio helped me understand three important database concepts:
+
+- **Atomicity:** Transactions group SQL statements so that changes can be committed together or undone through rollback.
+- **Isolation:** Isolation levels determine how concurrent transactions observe database changes and help control phenomena such as non-repeatable reads.
+- **Concurrency control:** Row-level locks, including those acquired through `SELECT ... FOR UPDATE`, coordinate access to shared records and make conflicting operations wait when necessary.
+
+These capabilities are supported by **InnoDB**, MySQL's default storage engine, which provides transaction support, row-level locking, and other mechanisms for maintaining data consistency.
+
+---
+
+## 5. Evidence
+
+Screenshots documenting the practical demonstrations are available in the following folder:
+
+`portfolio-3-transactions-concurrency/screenshots/`
+
+The screenshots provide evidence of the transaction operations, rollback verification, isolation behavior, and row-locking demonstrations.
+
