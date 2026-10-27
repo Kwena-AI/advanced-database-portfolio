@@ -259,3 +259,165 @@ Screenshots documenting the practical demonstrations are available in the follow
 
 The screenshots provide evidence of the transaction operations, rollback verification, isolation behavior, and row-locking demonstrations.
 
+
+
+# Portfolio 4: NoSQL and Advanced Data Models
+
+## 1. Data Model
+
+I remodelled the same library management system in MongoDB, a document-oriented NoSQL database, to compare it with the relational database design from Portfolio 1.
+
+The MongoDB implementation uses three collections:
+
+### Books Collection
+
+Each document stores the book's details in a single structure, including:
+
+- `title`, `ISBN`, `year`, and `publisher`
+- An embedded `category` object
+- An embedded `authors` array
+- A `copies` object containing `total` and `available`
+- A `formats` array
+
+Unlike a traditional relational design, embedded authors and categories eliminate the need for separate junction tables when retrieving a book's complete details.
+
+### Members Collection
+
+The `members` collection stores one document per library member, mirroring the structure and purpose of the `Member` table in MySQL.
+
+### Loans Collection
+
+The `loans` collection stores borrowing records and references a book's `_id` using an `ObjectId`, alongside the member's email address.
+
+These references connect loan records to books and members. Unlike MySQL foreign keys, MongoDB does not automatically enforce referential integrity for these references.
+
+---
+
+## 2. Queries Demonstrated
+
+I executed three filter queries against the `books` collection to demonstrate MongoDB's flexibility when working with embedded documents and arrays.
+
+### Query 1: Filter by Embedded Category
+
+```javascript
+db.books.find({ "category.name": "Fiction" })
+```
+
+**Result:** Returned 2 books.
+
+This query demonstrates dot notation, which allows MongoDB to filter documents using a field inside an embedded object.
+
+### Query 2: Filter by Author Name
+
+```javascript
+db.books.find({ "authors.name": "George Orwell" })
+```
+
+**Result:** Returned *1984*.
+
+This query demonstrates how MongoDB can match a field inside an embedded array of author documents.
+
+### Query 3: Filter by Book Format
+
+```javascript
+db.books.find({ "formats": "ebook" })
+```
+
+**Result:** Returned 3 books.
+
+This query demonstrates MongoDB's ability to match a value contained in an array without requiring a separate table for book formats.
+
+### Query 4: Join Loans with Books Using `$lookup`
+
+I also performed an aggregation using `$lookup` to combine loan records with their corresponding book documents and display the book title alongside each loan.
+
+```javascript
+db.loans.aggregate([
+  {
+    $lookup: {
+      from: "books",
+      localField: "book_id",
+      foreignField: "_id",
+      as: "book_details"
+    }
+  },
+  {
+    $unwind: "$book_details"
+  },
+  {
+    $project: {
+      _id: 1,
+      member_email: 1,
+      book_title: "$book_details.title"
+    }
+  }
+])
+```
+
+**Purpose:** This demonstrates that MongoDB supports relational-style joins through aggregation, even though it primarily uses a document-oriented data model.
+
+*Note: The `$lookup` example assumes that the loan collection uses `book_id` as the reference field and that the member email field is named `member_email`. Adjust these names if your actual documents use different field names.*
+
+---
+
+## 3. Suitability Analysis
+
+### Advantages of MongoDB
+
+The document model is a natural fit for a library catalogue because **data that is read together can be stored together**.
+
+Retrieving a book with its authors, category, and copy counts can require a single document read in MongoDB. In the equivalent normalized MySQL design, the same information may require querying four tables:
+
+- `Book`
+- `Author`
+- `Book_Author`
+- `Category`
+
+This can involve three `JOIN` operations.
+
+MongoDB also supports a flexible schema. Different book documents can contain additional fields, such as `ratings` or `edition`, without requiring a table-wide schema change using `ALTER TABLE`.
+
+### Limitations and Trade-offs
+
+The main trade-off is **denormalisation**.
+
+For example, the category name `Fiction` may be duplicated across multiple book documents. Renaming the category could therefore require updating several documents instead of changing one row in a normalized category table.
+
+MongoDB also does not enforce foreign-key constraints automatically. Referential integrity must be maintained through application logic or other validation mechanisms.
+
+### MongoDB vs. MySQL
+
+| Feature | MongoDB | MySQL |
+|---|---|---|
+| Data model | Document-oriented | Relational |
+| Schema | Flexible | Structured schema |
+| Related data | Embedded documents and references | Tables and foreign keys |
+| Joins | Aggregation with `$lookup` | SQL `JOIN` operations |
+| Referential integrity | Application-level enforcement for references | Foreign-key constraints |
+| Best fit in this project | Flexible catalogue reads | Consistent transactions and relational reporting |
+
+### Conclusion
+
+The two database models complement each other rather than one completely replacing the other.
+
+MongoDB is suitable for a flexible library catalogue where related information can be embedded in a document. MySQL remains a strong choice for operations that depend on relational integrity, enforced foreign keys, and complex reporting.
+
+The most appropriate database depends on the application's access patterns, consistency requirements, and data relationships.
+
+---
+
+## 4. Evidence
+
+The screenshots documenting the MongoDB implementation and queries are available in the `portfolio-4-nosql/` folder.
+
+| Screenshot | Evidence |
+|---|---|
+| `01-books-documents.png` | Book documents and embedded data |
+| `02-members.png` | Members collection |
+| `03-loans.png` | Loan documents and references |
+| `04-query-fiction.png` | Filtering books by category |
+| `05-query-orwell.png` | Filtering books by author |
+| `06-query-ebook.png` | Filtering books that are digital |
+| `07-lookup-join.png` | Aggregation using `$lookup` |
+
+These screenshots provide evidence of the document structure, query results, and join demonstration performed during the practical exercise.
